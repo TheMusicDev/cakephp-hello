@@ -1,58 +1,40 @@
-# CakePHP Application Skeleton
+# CakePHP 5 starter for Dokploy
 
-![Build Status](https://github.com/cakephp/app/actions/workflows/ci.yml/badge.svg?branch=5.x)
-[![Total Downloads](https://img.shields.io/packagist/dt/cakephp/app.svg?style=flat-square)](https://packagist.org/packages/cakephp/app)
-[![PHPStan](https://img.shields.io/badge/PHPStan-level%208-brightgreen.svg?style=flat-square)](https://github.com/phpstan/phpstan)
+A CakePHP 5.4 hello-world starter that runs on [`themusicdev/php-apache`](https://github.com/TheMusicDev/php-apache) — a framework-agnostic Apache + PHP 8.5 runtime image. This repo is what the Dokploy **CakePHP 5** template deploys (via `ghcr.io/themusicdev/cakephp-hello:latest`).
 
-A skeleton for creating applications with [CakePHP](https://cakephp.org) 5.x.
+## How the pieces fit
 
-The framework source code can be found here: [cakephp/cakephp](https://github.com/cakephp/cakephp).
-
-## Installation
-
-1. Download [Composer](https://getcomposer.org/doc/00-intro.md) or update `composer self-update`.
-2. Run `php composer.phar create-project --prefer-dist cakephp/app [app_name]`.
-
-If Composer is installed globally, run
-
-```bash
-composer create-project --prefer-dist cakephp/app
+```
+themusicdev/php-apache:8.5.12   → Apache + PHP 8.5 runtime, no app code
+        │  + this repo's code (child Dockerfile, built by CI)
+        ▼
+ghcr.io/themusicdev/cakephp-hello:latest → runtime + hello app = what the template deploys
+        │  + your real app code
+        ▼
+your image (your repo, child Dockerfile) → what you deploy in Dokploy
 ```
 
-In case you want to use a custom app dir name (e.g. `/myapp/`):
+**You never deploy the starter image for a real project.** To build your own app:
+
+1. Fork this repo.
+2. Replace the hello app with your code (or re-scaffold with `composer create-project cakephp/app` and keep the useful bits from this repo: `config/app_local.php` env wiring, `Dockerfile`).
+3. Create a Dokploy **Application** (Git provider, Dockerfile build) pointing at your fork.
+4. Add a MariaDB/MySQL service in the same environment and set `DATABASE_URL` (`mysql://user:pass@db:3306/dbname`) in the app's environment block.
+
+The skeleton only reads **`DATABASE_URL`** for DB config (see `config/app_local.php`) — the legacy `DATABASE_*` env vars are not honored.
+
+## What works out of the box (from the runtime image)
+
+- Apache rewrite, `AllowOverride All`, pretty URLs
+- Document root: `/var/www/html/webroot` (CakePHP default)
+- Traefik/Dokploy proxy awareness: real client IP via `X-Forwarded-For`, `HTTPS=on` from `X-Forwarded-Proto`
+- Extensions: intl, pdo_mysql, mysqli, opcache, zip, gd, bcmath, exif, imagick, soap, xsl, bz2, ftp, pdo_pgsql, pgsql, gmp, mbstring, simplexml, pdo_sqlite (+ base: lexbor, uri, sodium)
+- Composer + git + unzip included; `tmp/` and `logs/` made writable by the entrypoint
+- `DEBUG=false` default in this image (DebugKit requires dev deps; enable dev locally, not here)
+
+## Local test
 
 ```bash
-composer create-project --prefer-dist cakephp/app myapp
+docker compose up -d     # app at :8080, MariaDB included
+docker compose down
 ```
-
-You can now either use your machine's webserver to view the default home page, or start
-up the built-in webserver with:
-
-```bash
-bin/cake server -p 8765
-```
-
-Then visit `http://localhost:8765` to see the welcome page.
-
-## Demo app
-
-Check out the [5.x-demo branch](https://github.com/cakephp/app/tree/5.x-demo), which contains demo migrations and a seeder.
-See the [README](https://github.com/cakephp/app/blob/5.x-demo/README.md) on how to get it running.
-
-## Update
-
-Since this skeleton is a starting point for your application and various files
-would have been modified as per your needs, there isn't a way to provide
-automated upgrades, so you have to do any updates manually.
-
-## Configuration
-
-Read and edit the environment specific `config/app_local.php` and set up the
-`'Datasources'` and any other configuration relevant for your application.
-Other environment agnostic settings can be changed in `config/app.php`.
-
-## Layout
-
-The app skeleton uses [Milligram](https://milligram.io/) (v1.3) minimalist CSS
-framework by default. You can, however, replace it with any other library or
-custom styles.
