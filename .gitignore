@@ -3,4 +3,3 @@ logs/
 tmp/
 node_modules/
 .env
-config/app_local.php
